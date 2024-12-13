@@ -38,7 +38,7 @@ fn main() {
             .and_modify(|r| r.disallow_after.push(first.to_owned()))
             .or_insert(Rule {
                 disallow_before: Vec::new(),
-                disallow_after: vec![second.to_owned()],
+                disallow_after: vec![first.to_owned()],
             });
     }
 
