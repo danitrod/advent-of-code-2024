@@ -21,7 +21,7 @@ fn part1(input: &str) {
 
         for stone in stones.iter() {
             if *stone == "0" {
-                new_stones.push("1".to_string());
+                new_stones.push("1".to_owned());
             } else if stone.len() % 2 == 0 {
                 let left = stone[0..stone.len() / 2].parse::<isize>().unwrap();
                 let right = stone[stone.len() / 2..].parse::<isize>().unwrap();
