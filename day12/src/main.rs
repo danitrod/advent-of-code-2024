@@ -8,22 +8,79 @@ fn main() {
 
     let mut map = Vec::new();
     for line in input.lines() {
-        map.push(line.chars().map(|c| (c, false)).collect());
+        map.push(
+            line.chars()
+                .map(|c| Plant {
+                    label: c,
+                    seen: false,
+                    directions_checked: Vec::new(),
+                })
+                .collect(),
+        );
     }
 
     part1(&mut map.clone());
-    part2(&map);
+    part2(&mut map);
 }
 
-fn part1(map: &mut Vec<Vec<(char, bool)>>) {
+#[derive(Debug, PartialEq, Clone)]
+enum Direction {
+    Top,
+    Right,
+    Bottom,
+    Left,
+}
+
+impl Direction {
+    fn step_index(&self) -> (isize, isize) {
+        match self {
+            Direction::Top => (-1, 0),
+            Direction::Right => (0, 1),
+            Direction::Bottom => (1, 0),
+            Direction::Left => (0, -1),
+        }
+    }
+
+    fn opposing_axis_directions(&self) -> Vec<Direction> {
+        match self {
+            Direction::Top | Direction::Bottom => vec![Direction::Left, Direction::Right],
+            Direction::Right | Direction::Left => vec![Direction::Top, Direction::Bottom],
+        }
+    }
+
+    fn all() -> Vec<Direction> {
+        vec![
+            Direction::Top,
+            Direction::Right,
+            Direction::Bottom,
+            Direction::Left,
+        ]
+    }
+}
+
+#[derive(Clone)]
+struct Plant {
+    label: char,
+    seen: bool,
+    directions_checked: Vec<Direction>,
+}
+
+#[derive(Debug)]
+struct Region {
+    area: isize,
+    perimeter: isize,
+    sides: isize,
+}
+
+fn part1(map: &mut Vec<Vec<Plant>>) {
     println!("Day 12 - Part 1");
 
     let mut total_price = 0;
     for i in 0..map.len() {
         for j in 0..map[i].len() {
-            if !map[i][j].1 {
-                let (area, perimeter) = get_region_specs(map, i as isize, j as isize);
-                total_price += area * perimeter
+            if !map[i][j].seen {
+                let region = identify_region(map, i as isize, j as isize);
+                total_price += region.area * region.perimeter
             }
         }
     }
@@ -31,43 +88,112 @@ fn part1(map: &mut Vec<Vec<(char, bool)>>) {
     println!("Total price: {}", total_price);
 }
 
-fn get_region_specs(map: &mut Vec<Vec<(char, bool)>>, x: isize, y: isize) -> (isize, isize) {
-    map[x as usize][y as usize].1 = true;
+fn identify_region(map: &mut Vec<Vec<Plant>>, x: isize, y: isize) -> Region {
+    map[x as usize][y as usize].seen = true;
 
-    let (mut area, mut perimeter) = (1, 0);
+    let (mut area, mut perimeter, mut sides) = (1, 0, 0);
 
-    for (i, j) in [(0, -1), (0, 1), (1, 0), (-1, 0)] {
-        if x + i < 0
-            || x + i >= map.len() as isize
-            || y + j < 0
-            || y + j >= map[(x + i) as usize].len() as isize
+    for dir in Direction::all() {
+        let (step_x, step_y) = dir.step_index();
+
+        if x + step_x < 0
+            || x + step_x >= map.len() as isize
+            || y + step_y < 0
+            || y + step_y >= map[x as usize].len() as isize
+            || map[(x + step_x) as usize][(y + step_y) as usize].label
+                != map[x as usize][y as usize].label
         {
             perimeter += 1;
+
+            if !map[x as usize][y as usize]
+                .directions_checked
+                .contains(&dir)
+            {
+                sides += 1;
+                map[x as usize][y as usize]
+                    .directions_checked
+                    .push(dir.clone());
+                for step_dir in dir.opposing_axis_directions() {
+                    let (next_x, next_y) = step_dir.step_index();
+                    check_sides(
+                        map,
+                        x + next_x,
+                        y + next_y,
+                        &dir,
+                        step_dir,
+                        map[x as usize][y as usize].label,
+                    );
+                }
+            }
             continue;
         }
 
-        if map[(x + i) as usize][(y + j) as usize].0 != map[x as usize][y as usize].0 {
-            perimeter += 1;
-        }
-    }
-
-    for (i, j) in [(0, -1), (0, 1), (1, 0), (-1, 0)] {
-        if x + i >= 0
-            && x + i < map.len() as isize
-            && y + j >= 0
-            && y + j < map[(x + i) as usize].len() as isize
-            && !map[(x + i) as usize][(y + j) as usize].1
-            && map[(x + i) as usize][(y + j) as usize].0 == map[x as usize][y as usize].0
+        if !map[(x + step_x) as usize][(y + step_y) as usize].seen
+            && map[(x + step_x) as usize][(y + step_y) as usize].label
+                == map[x as usize][y as usize].label
         {
-            let neighboor_specs = get_region_specs(map, x + i, y + j);
-            area += neighboor_specs.0;
-            perimeter += neighboor_specs.1;
+            let neighboor_specs = identify_region(map, x + step_x, y + step_y);
+            area += neighboor_specs.area;
+            perimeter += neighboor_specs.perimeter;
+            sides += neighboor_specs.sides;
         }
     }
 
-    (area, perimeter)
+    Region {
+        area,
+        perimeter,
+        sides,
+    }
 }
 
-fn part2(_map: &Vec<Vec<(char, bool)>>) {
+fn check_sides(
+    map: &mut Vec<Vec<Plant>>,
+    x: isize,
+    y: isize,
+    side_to_check: &Direction,
+    step: Direction,
+    plant_type: char,
+) {
+    if x < 0
+        || x >= map.len() as isize
+        || y < 0
+        || y >= map[x as usize].len() as isize
+        || map[x as usize][y as usize].label != plant_type
+    {
+        return;
+    }
+
+    let (step_x, step_y) = side_to_check.step_index();
+
+    if x + step_x >= 0
+        && x + step_x < map.len() as isize
+        && y + step_y >= 0
+        && y + step_y < map[(x + step_x) as usize].len() as isize
+        && map[(x + step_x) as usize][(y + step_y) as usize].label == plant_type
+    {
+        return;
+    }
+
+    map[x as usize][y as usize]
+        .directions_checked
+        .push(side_to_check.clone());
+
+    let (step_x, step_y) = step.step_index();
+    check_sides(map, x + step_x, y + step_y, side_to_check, step, plant_type)
+}
+
+fn part2(map: &mut Vec<Vec<Plant>>) {
     println!("Day 12 - Part 2");
+
+    let mut total_price = 0;
+    for i in 0..map.len() {
+        for j in 0..map[i].len() {
+            if !map[i][j].seen {
+                let region = identify_region(map, i as isize, j as isize);
+                total_price += region.area * region.sides
+            }
+        }
+    }
+
+    println!("Total price: {}", total_price);
 }
