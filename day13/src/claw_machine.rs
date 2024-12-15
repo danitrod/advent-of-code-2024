@@ -5,12 +5,22 @@ use std::{
 
 const A_COST: isize = 3;
 const B_COST: isize = 1;
+const PART_2_ADDITIONAL_DIST: usize = 10_000_000_000_000;
 
 #[derive(Debug)]
 pub struct ClawMachine {
     a_step: (usize, usize),
     b_step: (usize, usize),
     pub prize: (usize, usize),
+}
+
+impl ClawMachine {
+    pub fn from_str_part_2(s: &str) -> Self {
+        let mut m = Self::from(s);
+        m.prize.0 += PART_2_ADDITIONAL_DIST;
+        m.prize.1 += PART_2_ADDITIONAL_DIST;
+        m
+    }
 }
 
 impl From<&str> for ClawMachine {
@@ -173,5 +183,40 @@ impl ClawMachine {
         }
 
         distances.get(&self.prize).copied()
+    }
+
+    pub fn find_price_part2(&self) -> Option<isize> {
+        // 3a + b = p
+        // ax1 + bx2 = fx
+        // ay1 + by2 = fy
+        //
+        // by2 = fy - ay1
+        // b = (fy - ay1) / y2
+        //
+        // ax1 + ((fy - ay1) / y2) x2 = fx
+        // ax1 + (x2 fy - ay1x2) / y2 = fx
+        // ax1y2 + x2fy - ay1x2 = fxy2
+        // ax1y2 - ay1x2 = fxy2 - x2fy
+        // a(x1y2 - y1x2) = fxy2 - x2fy
+        // a = (fxy2 - x2fy) / (x1y2 - y1x2)
+
+        let x1 = self.a_step.0 as isize;
+        let x2 = self.b_step.0 as isize;
+        let y1 = self.a_step.1 as isize;
+        let y2 = self.b_step.1 as isize;
+        let fx = self.prize.0 as isize;
+        let fy = self.prize.1 as isize;
+
+        if (fx * y2 - fy * x2) % (x1 * y2 - y1 * x2) != 0 {
+            return None;
+        }
+        let a = (fx * y2 - fy * x2) / (x1 * y2 - y1 * x2);
+
+        if (fy - a * y1) % y2 != 0 {
+            return None;
+        };
+        let b = (fy - a * y1) / y2;
+
+        Some(A_COST * a + B_COST * b)
     }
 }
