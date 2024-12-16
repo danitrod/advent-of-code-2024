@@ -77,7 +77,7 @@ fn identify_region(map: &mut Vec<Vec<Plant>>, x: isize, y: isize) -> Region {
                 map[x as usize][y as usize]
                     .directions_checked
                     .push(dir.clone());
-                for step_dir in dir.opposing_axis_directions() {
+                for step_dir in dir.perpendicular_directions() {
                     let (next_x, next_y) = step_dir.to_2d_step_indexes();
                     check_sides(
                         map,

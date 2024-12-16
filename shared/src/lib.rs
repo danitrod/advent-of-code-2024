@@ -40,7 +40,7 @@ impl Direction {
             || position.1 as isize + step.1 >= boundary.1 as isize
     }
 
-    pub fn opposing_axis_directions(&self) -> Vec<Direction> {
+    pub fn perpendicular_directions(&self) -> Vec<Direction> {
         match self {
             Up | Down => vec![Left, Right],
             Right | Left => vec![Up, Down],
