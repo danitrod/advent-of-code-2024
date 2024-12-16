@@ -1,3 +1,4 @@
+use shared::Direction;
 use std::fs;
 
 fn main() {
@@ -21,41 +22,6 @@ fn main() {
 
     part1(&mut map.clone());
     part2(&mut map);
-}
-
-#[derive(Debug, PartialEq, Clone)]
-enum Direction {
-    Top,
-    Right,
-    Bottom,
-    Left,
-}
-
-impl Direction {
-    fn step_index(&self) -> (isize, isize) {
-        match self {
-            Direction::Top => (-1, 0),
-            Direction::Right => (0, 1),
-            Direction::Bottom => (1, 0),
-            Direction::Left => (0, -1),
-        }
-    }
-
-    fn opposing_axis_directions(&self) -> Vec<Direction> {
-        match self {
-            Direction::Top | Direction::Bottom => vec![Direction::Left, Direction::Right],
-            Direction::Right | Direction::Left => vec![Direction::Top, Direction::Bottom],
-        }
-    }
-
-    fn all() -> Vec<Direction> {
-        vec![
-            Direction::Top,
-            Direction::Right,
-            Direction::Bottom,
-            Direction::Left,
-        ]
-    }
 }
 
 #[derive(Clone)]
@@ -94,12 +60,10 @@ fn identify_region(map: &mut Vec<Vec<Plant>>, x: isize, y: isize) -> Region {
     let (mut area, mut perimeter, mut sides) = (1, 0, 0);
 
     for dir in Direction::all() {
-        let (step_x, step_y) = dir.step_index();
+        let (step_x, step_y) = dir.to_2d_step_indexes();
 
-        if x + step_x < 0
-            || x + step_x >= map.len() as isize
-            || y + step_y < 0
-            || y + step_y >= map[x as usize].len() as isize
+        if dir
+            .step_takes_out_of_bounds((x as usize, y as usize), (map.len(), map[x as usize].len()))
             || map[(x + step_x) as usize][(y + step_y) as usize].label
                 != map[x as usize][y as usize].label
         {
@@ -114,7 +78,7 @@ fn identify_region(map: &mut Vec<Vec<Plant>>, x: isize, y: isize) -> Region {
                     .directions_checked
                     .push(dir.clone());
                 for step_dir in dir.opposing_axis_directions() {
-                    let (next_x, next_y) = step_dir.step_index();
+                    let (next_x, next_y) = step_dir.to_2d_step_indexes();
                     check_sides(
                         map,
                         x + next_x,
@@ -163,7 +127,7 @@ fn check_sides(
         return;
     }
 
-    let (step_x, step_y) = side_to_check.step_index();
+    let (step_x, step_y) = side_to_check.to_2d_step_indexes();
 
     if x + step_x >= 0
         && x + step_x < map.len() as isize
@@ -178,7 +142,7 @@ fn check_sides(
         .directions_checked
         .push(side_to_check.clone());
 
-    let (step_x, step_y) = step.step_index();
+    let (step_x, step_y) = step.to_2d_step_indexes();
     check_sides(map, x + step_x, y + step_y, side_to_check, step, plant_type)
 }
 

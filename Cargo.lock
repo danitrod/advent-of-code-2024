@@ -62,6 +62,9 @@ version = "0.1.0"
 [[package]]
 name = "day12"
 version = "0.1.0"
+dependencies = [
+ "shared",
+]
 
 [[package]]
 name = "day13"
@@ -73,6 +76,13 @@ dependencies = [
 [[package]]
 name = "day14"
 version = "0.1.0"
+
+[[package]]
+name = "day15"
+version = "0.1.0"
+dependencies = [
+ "shared",
+]
 
 [[package]]
 name = "either"
@@ -99,3 +109,7 @@ dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
 ]
+
+[[package]]
+name = "shared"
+version = "0.1.0"
